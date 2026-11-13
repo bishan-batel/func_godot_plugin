@@ -1,6 +1,7 @@
 @tool
 @icon("res://addons/func_godot/icons/icon_godot_ranger.svg")
 class_name FuncGodotFGDFile extends Resource
+
 ## [Resource] file used to express a set of [FuncGodotFGDEntity] definitions. 
 ## 
 ## Can be exported as an FGD file for use with a Quake or Hammer-based map editor. Used in conjunction with [FuncGodotMapSetting] to generate nodes in a [FuncGodotMap] node.
@@ -17,197 +18,197 @@ enum FuncGodotTargetMapEditors {
 }
 
 ## Builds and exports the FGD file.
-@export_tool_button("Export FGD") var export_file := export_button
+@export_tool_button("Export FGD") var export_file := _export_button
 
-func export_button() -> void:
-	do_export_file(target_map_editor)
+func _export_button() -> void:
+	load("uid://b44ah5b2000wa").export_file()
 
-func do_export_file(target_editor: FuncGodotTargetMapEditors = FuncGodotTargetMapEditors.TRENCHBROOM, fgd_output_folder: String = "") -> Error:
-	if fgd_output_folder.is_empty():
-		fgd_output_folder = FuncGodotLocalConfig.get_setting(FuncGodotLocalConfig.PROPERTY.FGD_OUTPUT_FOLDER) as String
-	if fgd_output_folder.is_empty():
-		printerr("Skipping export: No game config folder")
-		return ERR_DOES_NOT_EXIST
+## Toggles whether [FuncGodotFGDModelPointClass] resources will generate models from their [PackedScene] files.
+@export var generate_model_point_class_models: bool = true
 
-	if fgd_name == "":
-		printerr("Skipping export: Empty FGD name")
-	
-	if not DirAccess.dir_exists_absolute(fgd_output_folder):
-		if DirAccess.make_dir_recursive_absolute(fgd_output_folder) != OK:
-			printerr("Skipping export: Failed to create directory")
-			return ERR_CANT_CREATE
+## When exporting this FGD should verbose messages be printed to console
+@export var verbose_export: bool = false
 
-	var content := build_class_text(target_editor)
-	if content.is_empty():
-		return ERR_INVALID_DATA
-
-	var fgd_file = fgd_output_folder.path_join(fgd_name + ".fgd")
-	var file_obj := FileAccess.open(fgd_file, FileAccess.WRITE)
-	if not file_obj:
-		printerr("Failed to open file for writing: ", fgd_file)
-		return ERR_FILE_CANT_OPEN
-	
-	print("Exporting FGD to ", fgd_file)
-	file_obj.store_string(content)
-	file_obj.close()
-
-	return OK
-
-@export_group("Map Editor")
-
+# @export_group("Map Editor")
 ## Some map editors do not support the features found in others 
 ## (ex: TrenchBroom supports the "model" key word while others require "studio", 
 ## J.A.C.K. uses the "shader" key word while others use "material", etc...). 
 ## If you get errors in your map editor, try changing this setting and re-exporting. 
 ## This setting is overridden when the FGD is built via the Game Config resource.
-@export var target_map_editor: FuncGodotTargetMapEditors = FuncGodotTargetMapEditors.TRENCHBROOM
-
-# Some map editors do not support the "model" key word and require the "studio" key word instead. 
-# If you get errors in your map editor, try changing this setting. 
-# This setting is overridden when the FGD is built via the Game Config resource.
-#@export var model_key_word_supported: bool = true
+## [Gross Incandescence] - We are only supporting TrenchBroom, removed the @export declarator
+const target_map_editor: FuncGodotTargetMapEditors = FuncGodotTargetMapEditors.TRENCHBROOM
 
 @export_group("FGD")
-
 ## FGD output filename without the extension.
 @export var fgd_name: String = "FuncGodot"
 
 ## Array of [FuncGodotFGDFile] resources to include in FGD file output. All of the entities included with these FuncGodotFGDFile resources will be prepended to the outputted FGD file.
-@export var base_fgd_files: Array[Resource] = []
+@export var base_fgd_files: Array[FuncGodotFGDFile] = []
 
 ## Array of resources that inherit from [FuncGodotFGDEntityClass]. This array defines the entities that will be added to the exported FGD file and the nodes that will be generated in a [FuncGodotMap].
+# @export var entity_definitions: Array[FuncGodotFGDEntityClass] = []
 @export var entity_definitions: Array[Resource] = []
 
-## Toggles whether [FuncGodotFGDModelPointClass] resources will generate models from their [PackedScene] files.
-@export var generate_model_point_class_models: bool = true
 
-func build_class_text(target_editor: FuncGodotTargetMapEditors = FuncGodotTargetMapEditors.TRENCHBROOM) -> String:
-	var res : String = ""
+## builds the class texts
+## returns a FGDCompiler containing the built class text, along with
+## any errors accrued
+func compile_entity_classes(options: FuncGodotFGDCompiler.Options) -> FuncGodotFGDCompiler:
+	var compiler := FuncGodotFGDCompiler.new_from_resource(self, options)
+	compiler.info("Compiling entity classes")
 
-	for base_index in base_fgd_files.size():
-		var base_fgd = base_fgd_files[base_index]
-		if base_fgd is FuncGodotFGDFile:
-			res += base_fgd.build_class_text(target_editor)
-		else:
-			printerr("FGD base files array contains an element with invalid type (should be FuncGodotFGDFile) at position %s - skipping" % base_index)
+	for i in range(len(base_fgd_files)):
+		var base_fgd := base_fgd_files[i] as FuncGodotFGDFile
 
-	var entities = get_fgd_classes()
-
-	var classnames: Dictionary[String, int] = {}
-	var failure: bool = false
-
-	for ent_index in entities.size():
-		var ent = entities[ent_index]
-
-		if ent is not FuncGodotFGDEntityClass:
-			printerr("FGD entities array contains an element with invalid type (should be derived from FuncGodotFGDEntityClass) at position %s - skipping" % ent_index)
-			continue
-		if ent.func_godot_internal:
-			continue
-		if ent is FuncGodotFGDModelPointClass:
-			ent._model_generation_enabled = generate_model_point_class_models
-
-		if ent.classname.is_empty():
-			printerr("FGD class cannot be exported with empty classname (in position %s)" % ent_index)
-			failure = true
+		if base_fgd == null:
+			compiler.warn("Base FGD ", i, " is null or invalid type.")
 			continue
 
-		if classnames.has(ent.classname):
-			printerr("Duplicate class name found: %s (in positions %s and %s)" % [
-				ent.classname,
-				classnames[ent.classname],
-				ent_index,
-			])
-			failure = true
+		# compile the base FGD and compose it into ourself
+		compiler.compose(base_fgd.compile_entity_classes(options))
+
+		# short circuit if any fatal errors occured
+		if compiler.has_fatal_errors():
+			return compiler
+
+	# get a collection of all entity definitions with each fully instantiated /
+	# they all have their inherited properties baked
+	var all_definitions: Dictionary[String, FuncGodotFGDEntityClass] = {}
+
+	compiler.compose(
+		recursively_find_all_entity_definitions(options, all_definitions)
+	)
+
+	if compiler.has_fatal_errors():
+		return compiler
+
+	compiler.info("Finding all entity definitions")
+
+	for classname in all_definitions.keys():
+		compiler.compose(all_definitions[classname].compile(options))
+
+		if compiler.has_fatal_errors():
+			return compiler
+
+	return compiler
+
+## attempts to expand / insert the entity into the definitions dictionary
+func _insert_entity_to_definitions(
+	compiler: FuncGodotFGDCompiler,
+	entity: FuncGodotFGDEntityClass,
+	definitions: Dictionary[String, FuncGodotFGDEntityClass]
+):
+	if not entity.has_valid_classname():
+		compiler.severe("Skipping " + entity.resource_path + ", invalid class name")
+
+	var classname := entity.classname
+
+	if definitions.has(classname):
+		# duplicate classnames are more likely to be fatal / produce malformed results
+		compiler.severe(
+			"Duplicate entity definition '%s' (same classname) found, overwrote with newer definition."
+				% [classname]
+		)
+
+	definitions[classname] = entity.bake_inherited_properties()
+
+
+## gets all definitions for exporting, key is the classname of the entity
+## the compiler is not written to must may accrue warnings & errors
+## all_definitions is an out parameter and
+func recursively_find_all_entity_definitions(
+	options: FuncGodotFGDCompiler.Options,
+	all_definitions: Dictionary[String, FuncGodotFGDEntityClass],
+) -> FuncGodotFGDCompiler:
+	var compiler := FuncGodotFGDCompiler.new_from_resource(self, options)
+	compiler.info("Finding all entity definitions")
+
+	for i in range(len(base_fgd_files)):
+		var base_fgd: FuncGodotFGDFile = base_fgd_files[i]
+
+		if base_fgd == null:
+			compiler.warn("Base FGD at index ", i, " is null or an incorrect type.")
 			continue
-		
-		classnames[ent.classname] = ent_index 
 
-		var ent_text = ent.build_def_text(target_editor)
-		res += ent_text
+		compiler.compose(
+			base_fgd.recursively_find_all_entity_definitions(options, all_definitions)
+		)
 
-		if ent != entities[-1]:
-			res += "\n"
-	
-	if failure:
-		return ""
+		# early return if the base FGD had fatal errors 
+		if compiler.has_fatal_errors():
+			return compiler
 
-	return res
+	for i in range(len(entity_definitions)):
+		var entity := entity_definitions[i] as FuncGodotFGDEntityClass
 
-## This getter does a little bit of validation. Providing only an array of non-null uniquely-named entity definitions
-func get_fgd_classes() -> Array:
-	var res : Array = []
-	for cur_ent_def_ind in range(entity_definitions.size()):
-		var cur_ent_def = entity_definitions[cur_ent_def_ind]
-		if cur_ent_def == null:
+		if entity == null:
+			compiler.warn("Entity definition at index ", i, " is null or an incorrect type.")
 			continue
-		elif not (cur_ent_def is FuncGodotFGDEntityClass):
-			printerr("Bad value in entity definition set at position %s! Not an entity defintion." % cur_ent_def_ind)
-			continue
-		res.append(cur_ent_def)
-	return res
 
-func get_entity_definitions() -> Dictionary[String, FuncGodotFGDEntityClass]:
-	var res: Dictionary[String, FuncGodotFGDEntityClass] = {}
+		_insert_entity_to_definitions(compiler, entity, all_definitions)
 
-	for base_fgd in base_fgd_files:
-		var fgd_res = base_fgd.get_entity_definitions()
-		for key in fgd_res:
-			res[key] = fgd_res[key]
+		if compiler.has_fatal_errors():
+			return compiler
 
-	for ent in get_fgd_classes():
-		# Skip entities without classnames
-		if ent.classname.replace(" ","") == "":
-			printerr("Skipping " + ent.get_path() + ": Empty classname")
-			continue
-		
-		if ent is FuncGodotFGDPointClass or ent is FuncGodotFGDSolidClass:
-			var entity_def = ent.duplicate()
-			var meta_properties: Dictionary[String, Variant] = {}
-			var class_properties: Dictionary[String, Variant] = {}
-			var class_property_descriptions: Dictionary[String, Variant] = {}
+	return compiler
 
-			for base_class in _generate_base_class_list(entity_def):
-				for meta_property in base_class.meta_properties:
-					meta_properties[meta_property] = base_class.meta_properties[meta_property]
+## Exports the FGD file
+func do_export_file(
+	target_editor: FuncGodotTargetMapEditors,
+	fgd_output_folder: String
+) -> void:
+	assert(Engine.is_editor_hint(), "Can only export the file in-editor")
+	assert(target_editor == FuncGodotTargetMapEditors.TRENCHBROOM, "FuncGodot[Gross] only supports trench broom")
 
-				for class_property in base_class.class_properties:
-					class_properties[class_property] = base_class.class_properties[class_property]
+	var compiler := compile_entity_classes(create_compiler_options())
 
-				for class_property_desc in base_class.class_property_descriptions:
-					class_property_descriptions[class_property_desc] = base_class.class_property_descriptions[class_property_desc]
+	if compiler.has_fatal_errors():
+		printerr("Aborting FGD export, fatal error(s)")
+		var dialogue := AcceptDialog.new()
+		dialogue.title = "FGD File Export"
+		dialogue.dialog_text = "Encountered fatal errors trying to export the FGD file."
+		dialogue.dialog_text += "\n- ".join(compiler.get_errors_and_warnings().map(func(msg): return msg.contents))
+		dialogue.confirmed.connect(func(): dialogue.queue_free())
+		EditorInterface.get_base_control().add_child(dialogue)
+		dialogue.popup_centered()
+		return
 
-			for meta_property in entity_def.meta_properties:
-				meta_properties[meta_property] = entity_def.meta_properties[meta_property]
+	if compiler.has_warnings() or compiler.has_severe_errors():
+		var dialogue: FuncGodotFGDExportCaution = preload("uid://cqdsyu3fec1vv").instantiate()
+		dialogue.visible = false
+		EditorInterface.get_base_control().add_child(dialogue)
+		dialogue.setup(compiler, func(): _export_compiled(fgd_output_folder, compiler))
+		return
 
-			for class_property in entity_def.class_properties:
-				class_properties[class_property] = entity_def.class_properties[class_property]
+	_export_compiled(fgd_output_folder, compiler)
 
-			for class_property_desc in entity_def.class_property_descriptions:
-				class_property_descriptions[class_property_desc] = entity_def.class_property_descriptions[class_property_desc]
+func _export_compiled(fgd_output_folder: String, compiler: FuncGodotFGDCompiler):
+	if not DirAccess.dir_exists_absolute(fgd_output_folder):
+		var err: Error = DirAccess.make_dir_recursive_absolute(fgd_output_folder)
+		if err != OK:
+			printerr("Failed Export: Failed to create directory", error_string(err))
+			return
 
-			entity_def.meta_properties = meta_properties
-			entity_def.class_properties = class_properties
-			entity_def.class_property_descriptions = class_property_descriptions
+	var fgd_file: String = fgd_output_folder.path_join(fgd_name + ".fgd")
 
-			res[ent.classname] = entity_def
-	return res
+	var file_obj: FileAccess = FileAccess.open(fgd_file, FileAccess.WRITE)
 
-func _generate_base_class_list(entity_def : Resource, visited_base_classes = []) -> Array:
-	var base_classes : Array = []
+	if not file_obj:
+		printerr(
+			"Failed to open file for writing: ",
+			fgd_file,
+			" Reason: ",
+			error_string(FileAccess.get_open_error())
+		)
+		return
 
-	visited_base_classes.append(entity_def.classname)
+	print_rich("Finished compiling FGD, Exporting FGD to ", fgd_file)
+	compiler.save_to_file(file_obj)
 
-	# End recursive search if no more base_classes
-	if len(entity_def.base_classes) == 0:
-		return base_classes
+	file_obj.close()
 
-	# Traverse up to the next level of hierarchy, if not already visited
-	for base_class in entity_def.base_classes:
-		if not base_class.classname in visited_base_classes:
-			base_classes.append(base_class)
-			base_classes += _generate_base_class_list(base_class, visited_base_classes)
-		else:
-			printerr(str("Entity '", entity_def.classname,"' contains cycle/duplicate to Entity '", base_class.classname, "'"))
-
-	return base_classes
+func create_compiler_options() -> FuncGodotFGDCompiler.Options:
+	var options := FuncGodotFGDCompiler.Options.new()
+	options.generate_models = true
+	options.verbose = verbose_export
+	return options

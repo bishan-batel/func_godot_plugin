@@ -178,8 +178,13 @@ class EntityData extends RefCounted:
 	## Determines if the entity's mesh should be processed for normal smoothing. 
 	## The smoothing property can be retrieved from [member FuncGodotMapSettings.entity_smoothing_property].
 	func is_smooth_shaded(smoothing_property: String = "_phong") -> bool: 
-		return int(properties.get(smoothing_property, 0)) > 0
-  	
+		var shaded = properties.get(smoothing_property, 0)
+		
+		if shaded is String:
+			return true if shaded == "1" else false
+		
+		return shaded
+	
 	## Retrieves the entity's smoothing angle to determine if the face should be smoothed. 
 	## The smoothing angle property can be retrieved from [member FuncGodotMapSettings.entity_smoothing_angle_property].
 	func get_smoothing_angle(smoothing_angle_property: String = "_phong_angle") -> float:

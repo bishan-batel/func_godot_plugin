@@ -1,6 +1,7 @@
 @tool
 @icon("res://addons/func_godot/icons/icon_godambler3d.svg")
 class_name FuncGodotFGDPointClassDisplayDescriptor extends Resource
+
 ## Resource that describes how to display an FGD Point Class entity.
 ##
 ## A resource for [FuncGodotFGDPointClass] that describes how to display a point entity in a map editor. 
@@ -46,3 +47,7 @@ class_name FuncGodotFGDPointClassDisplayDescriptor extends Resource
 ## Format should be [code]property == value[/code] or some other valid expression in accordance with TrenchBroom's Expression Language.[br][br] 
 ## [color=orange]WARNING:[/color] Only utilized by TrenchBroom!
 @export var conditional: String = ""
+
+## Whether this descriptor has any custom options
+func uses_options() -> bool:
+	return not scale.is_empty() or not skin.is_empty() or not frame.is_empty()

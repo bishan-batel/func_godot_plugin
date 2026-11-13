@@ -1,6 +1,7 @@
 @tool
 @icon("res://addons/func_godot/icons/icon_godot_ranger.svg")
 class_name TrenchBroomGameConfig extends Resource
+
 ## Game configuration definition for TrenchBroom.
 ## 
 ## Defines a game for TrenchBroom to express a set of entity definitions and editor behaviors.
@@ -17,68 +18,62 @@ enum GameConfigVersion {
 @export_tool_button("Export GameConfig") var _export_file: Callable = export_file
 
 ## Name of the game in TrenchBroom's game list.
-@export var game_name : String = "FuncGodot"
+@export var game_name: String = "FuncGodot"
 
 ## Icon for TrenchBroom's game list.
-@export var icon : Texture2D = preload("res://addons/func_godot/icon32.png")
+@export var icon: Texture2D = preload("res://addons/func_godot/icon32.png")
 
 ## Available map formats when creating a new map in TrenchBroom. The order of elements in the array is the order TrenchBroom will list the available formats. 
 ## The [i]"initialmap"[/i] key value is optional.
 @export var map_formats: Array[Dictionary] = [
-	{ "format": "Valve", "initialmap": "initial_valve.map" },
-	{ "format": "Standard", "initialmap": "initial_standard.map" },
-	{ "format": "Quake2", "initialmap": "initial_quake2.map" },
-	{ "format": "Quake3" }
+	{"format": "Valve", "initialmap": "initial_valve.map"},
+	{"format": "Standard", "initialmap": "initial_standard.map"},
+	{"format": "Quake2", "initialmap": "initial_quake2.map"},
+	{"format": "Quake3"}
 ]
 
 @export_group("Textures")
-
 ## Path to top level textures folder relative to the game path. Also referred to as materials in the latest versions of TrenchBroom.
 @export var textures_root_folder: String = "textures"
 
 ## Textures matching these patterns will be hidden from TrenchBroom.
-@export var texture_exclusion_patterns: Array[String] = ["*_albedo", "*_ao", "*_emission", "*_height", "*_metallic", "*_normal", "*_orm", "*_roughness", "*_sss"]
+@export var texture_exclusion_patterns: Array[String] = [
+	"*_albedo", "*_ao", "*_emission", "*_height", "*_metallic",
+	"*_normal", "*_orm", "*_roughness", "*_sss"
+]
 
 ## Palette path relative to your Game Path. Only needed for Quake WAD2 files. Half-Life WAD3 files contain the palettes within the texture information.
-@export var palette_path: String = ""
+@export var palette_path: String = "textures/palette.lmp"
 
 @export_group("Entities")
-
 ## [FuncGodotFGDFile] resource to include with this game. If using multiple FGD File resources, 
 ## this should be the master FGD File that contains them in [member FuncGodotFGDFile.base_fgd_files].
-@export var fgd_file : FuncGodotFGDFile = preload("res://addons/func_godot/fgd/func_godot_fgd.tres")
+@export var fgd_file: FuncGodotFGDFile = preload("res://addons/func_godot/fgd/func_godot_fgd.tres")
 
 ## Scale expression that modifies the default display scale of entities in TrenchBroom.
 ## See [url="https://trenchbroom.github.io/manual/latest/#game_configuration_files_entities"]TrenchBroom Manual Entity Configuration Information[/url] for more information.
 @export var entity_scale: String = "32"
-
-## Controls whether default entity properties are instantiated automatically when TrenchBroom creates a new entity.
-## See [url="https://trenchbroom.github.io/manual/latest/#entity_properties_defaults"]TrenchBroom Manual Default Entity Properties[/url] for more information.
-@export var set_default_properties: bool = false
 
 ## Toggles whether [FuncGodotFGDModelPointClass] resources will generate models from their [PackedScene] files.
 @export var generate_model_point_class_models: bool = true
 
 ## Arrays containing the [TrenchbroomTag] resource type.
 @export_group("Tags")
-
 ## [TrenchbroomTag] resources that apply to brush entities.
-@export var brush_tags : Array[Resource] = []
+@export var brush_tags: Array[Resource] = []
 
 ## [TrenchbroomTag] resources that apply to brush faces.
-@export var brushface_tags : Array[Resource] = [
+@export var brushface_tags: Array[Resource] = [
 	preload("res://addons/func_godot/game_config/trenchbroom/tb_face_tag_clip.tres"),
 	preload("res://addons/func_godot/game_config/trenchbroom/tb_face_tag_skip.tres"),
 	preload("res://addons/func_godot/game_config/trenchbroom/tb_face_tag_origin.tres")
 ]
 
 @export_group("Face Attributes")
-
 ## Default scale of textures on new brushes and when UV scale is reset.
-@export var default_uv_scale : Vector2 = Vector2(1, 1)
+@export var default_uv_scale: Vector2 = Vector2(1, 1)
 
 @export_group("Compatibility")
-
 ## Game configuration format compatible with the version of TrenchBroom being used.
 @export var game_config_version: GameConfigVersion = GameConfigVersion.Latest
 
@@ -95,7 +90,7 @@ static func _get_match_key(tag_match_type: int) -> String:
 
 # Generates completed text for a .cfg file.
 func _build_class_text() -> String:
-	var map_formats_str : String = ""
+	var map_formats_str: String = ""
 	for map_format in map_formats:
 		map_formats_str += "{ \"format\": \"" + map_format.format + "\""
 		if map_format.has("initialmap"):
@@ -104,20 +99,20 @@ func _build_class_text() -> String:
 			map_formats_str += " },\n\t\t"
 		else:
 			map_formats_str += " }"
-	
+
 	var texture_exclusion_patterns_str := ""
 	for tex_pattern in texture_exclusion_patterns:
 		texture_exclusion_patterns_str += "\"" + tex_pattern + "\""
 		if tex_pattern != texture_exclusion_patterns[-1]:
 			texture_exclusion_patterns_str += ", "
-	
-	var fgd_filename_str : String = "\"" + fgd_file.fgd_name + ".fgd\""
+
+	var fgd_filename_str: String = "\"" + fgd_file.fgd_name + ".fgd\""
 
 	var brush_tags_str = _parse_tags(brush_tags)
 	var brushface_tags_str = _parse_tags(brushface_tags)
 	var uv_scale_str = _parse_default_uv_scale(default_uv_scale)
-	
-	var config_text : String = ""
+
+	var config_text: String = ""
 	match game_config_version:
 		GameConfigVersion.Latest, GameConfigVersion.Version8, GameConfigVersion.Version9:
 			config_text = _get_game_config_v9v8_text() % [
@@ -128,7 +123,6 @@ func _build_class_text() -> String:
 				palette_path,
 				fgd_filename_str,
 				entity_scale,
-				set_default_properties,
 				brush_tags_str,
 				brushface_tags_str,
 				uv_scale_str
@@ -150,7 +144,7 @@ func _build_class_text() -> String:
 
 		_:
 			push_error("Unsupported Game Config Version!")
-	
+
 	return config_text
 
 # Converts brush, face, and attribute tags into a .cfg-usable String.
@@ -193,58 +187,72 @@ func _parse_flags(flags: Array) -> String:
 	return flags_str
 
 # Converts default uv scale vector to .cfg String.
-func _parse_default_uv_scale(texture_scale : Vector2) -> String:
-	var entry_str = "\"scale\": [{x}, {y}]"
-	return entry_str.format({
-		"x": texture_scale.x,
-		"y": texture_scale.y
-	})
+func _parse_default_uv_scale(texture_scale: Vector2) -> String:
+	var entry_str := "\"scale\": [{x}, {y}]"
+	return entry_str.format(
+		{
+			"x": texture_scale.x,
+			"y": texture_scale.y
+		}
+	)
 
 ## Exports this game's configuration with an icon, .cfg, and all accompanying FGD files in the [FuncGodotLocalConfig] [b]Trenchbroom Game Config Folder[/b].
 func export_file() -> void:
-	var config_folder: String = FuncGodotLocalConfig.get_setting(FuncGodotLocalConfig.PROPERTY.TRENCHBROOM_GAME_CONFIG_FOLDER) as String
+	var config_folder: String = FuncGodotUserConfig.get_trench_broom_game_config_folder().path_join(game_name)
+
 	if config_folder.is_empty():
-		printerr("Skipping export: No TrenchBroom Game folder")
+		push_error("Skipping export: No TrenchBroom Game folder")
 		return
-	
+
 	# Make sure FGD file is set
 	if not fgd_file:
-		printerr("Skipping export: No FGD file")
+		push_error("Skipping export: No FGD file")
 		return
-	
+
 	var config_dir := DirAccess.open(config_folder)
 	# Create config folder in case it does not exist
 	if config_dir == null:
-		print("Couldn't open directory, creating...")
+		print_rich("Couldn't open directory, creating...")
 		var err := DirAccess.make_dir_recursive_absolute(config_folder)
 		if err != OK:
-			printerr("Skipping export: Failed to create directory")
+			push_error("Skipping export: Failed to create directory")
 			return
-	
+
 	# Icon
-	var icon_path : String = config_folder + "/icon.png"
-	print("Exporting icon to ", icon_path)
-	var export_icon : Image = icon.get_image()
+	var icon_path: String = config_folder.path_join("icon.png")
+	print_rich("Exporting icon to ", icon_path)
+	var export_icon: Image = icon.get_image()
 	export_icon.resize(32, 32, Image.INTERPOLATE_LANCZOS)
 	export_icon.save_png(icon_path)
-	
+
 	# .cfg
-	var target_file_path: String = config_folder + "/GameConfig.cfg"
-	print("Exporting TrenchBroom Game Config to ", target_file_path)
-	var file = FileAccess.open(target_file_path, FileAccess.WRITE)
+	var target_file_path: String = config_folder.path_join("GameConfig.cfg")
+	print_rich("Exporting TrenchBroom Game Config to ", target_file_path)
+	var file := FileAccess.open(target_file_path, FileAccess.WRITE)
 	file.store_string(_build_class_text())
 	file.close()
-	
+
+	var profiles_files := FileAccess.open(config_folder.path_join("GameEngineProfiles.cfg"), FileAccess.WRITE)
+
+	var game_dir: String = FuncGodotUserConfig.get_editor_game_dir()
+	var profiles := {
+		"profiles": [
+			{
+				"name": "godot",
+				"parameters": "--path %s -- --func_godot_map ${MAP_BASE_NAME}" % game_dir,
+				"path": OS.get_executable_path()
+			}
+		],
+		"version": 1
+	}
+	profiles_files.store_string(JSON.stringify(profiles, "\t"))
+	profiles_files.close()
+
 	# FGD
-	var export_fgd : FuncGodotFGDFile = fgd_file.duplicate()
-	export_fgd.generate_model_point_class_models = generate_model_point_class_models
-
-	var export_err := export_fgd.do_export_file(FuncGodotFGDFile.FuncGodotTargetMapEditors.TRENCHBROOM, config_folder)
-
-	if export_err != OK:
-		printerr("Could not export FGD.")
-	else:
-		print("TrenchBroom Game Config export complete\n")
+	var export_fgd: FuncGodotFGDFile = fgd_file
+	fgd_file.generate_model_point_class_models = generate_model_point_class_models
+	fgd_file.do_export_file(FuncGodotFGDFile.FuncGodotTargetMapEditors.TRENCHBROOM, config_folder)
+	print_rich("TrenchBroom Game Config export complete\n")
 
 #region GameConfigDeclarations
 func _get_game_config_v4_text() -> String:
@@ -262,7 +270,7 @@ func _get_game_config_v4_text() -> String:
 	},
 	"textures": {
 		"package": { "type": "directory", "root": "%s" },
-		"format": { "extensions": ["jpg", "jpeg", "tga", "png", "D", "C"], "format": "image" },
+		"format": { "extensions": ["jpg", "jpeg", "hdr", "tga", "png", "D", "C"], "format": "image" },
 		"excludes": [ %s ],
 		"palette": "%s",
 		"attribute": ["_tb_textures", "wad"]
@@ -306,7 +314,7 @@ func _get_game_config_v9v8_text() -> String:
 	},
 	"materials": {
 		"root": "%s",
-		"extensions": [".bmp", ".exr", ".hdr", ".jpeg", ".jpg", ".png", ".tga", ".webp", ".D", ".C"],
+		"extensions": [".bmp", ".exr", ".jpeg", ".jpg", ".png", ".tga", ".webp", ".D", ".C"],
 		"excludes": [ %s ],
 		"palette": "%s",
 		"attribute": "wad"
@@ -314,8 +322,7 @@ func _get_game_config_v9v8_text() -> String:
 	"entities": {
 		"definitions": [ %s ],
 		"defaultcolor": "0.6 0.6 0.6 1.0",
-		"scale": %s,
-		"setDefaultProperties": %s
+		"scale": %s
 	},
 	"tags": {
 		"brush": [
@@ -334,11 +341,11 @@ func _get_game_config_v9v8_text() -> String:
 	}
 }
 	"""
-	
+
 	if game_config_version == GameConfigVersion.Version8:
 		config_text = config_text.replace(": 9,", ": 8,")
 		config_text = config_text.replace("material", "texture")
-	
+
 	return config_text
 
-#endregion
+	#endregion

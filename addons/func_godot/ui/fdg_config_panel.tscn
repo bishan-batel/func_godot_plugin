@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://dua5noih6iyoo"]
+
+[ext_resource type="Texture2D" uid="uid://cfxlhjsefleff" path="res://addons/func_godot/icons/icon_godot_ranger.svg" id="1_e4dfw"]
+[ext_resource type="Script" uid="uid://dr5x5oadkfyve" path="res://addons/func_godot/ui/fdg_config_panel.gd" id="1_ta6n8"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_fayhq"]
+font_size = 30
+
+[node name="FdgConfigTab" type="EditorDock" unique_id=1616177936 node_paths=PackedStringArray("inspector")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -7.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+title = "FuncGodot"
+dock_icon = ExtResource("1_e4dfw")
+force_show_icon = true
+default_slot = 4
+script = ExtResource("1_ta6n8")
+inspector = NodePath("MarginContainer/EditorInspector")
+
+[node name="MarginContainer" type="VBoxContainer" parent="." unique_id=1769384964]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MarginContainer" unique_id=110581617]
+layout_mode = 2
+text = "FuncGodot"
+label_settings = SubResource("LabelSettings_fayhq")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EditorInspector" type="EditorInspector" parent="MarginContainer" unique_id=2037925020]
+layout_mode = 2
+size_flags_vertical = 3

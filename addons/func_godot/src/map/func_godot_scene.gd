@@ -1,8 +1,8 @@
 ## FuncGodotMap inherited script that hides properties from FuncGodotMap.
 ## Intended only to be used by the QuakeMapScene importer to attach to the 
 ## root node of the imported map/scene 
+@icon("res://addons/at-icons/node3d/mountains.svg")
 @tool
-@icon("res://addons/func_godot/icons/icon_slipgate3d.svg")
 extends FuncGodotMap
 class_name FuncGodotScene
 

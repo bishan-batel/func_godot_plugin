@@ -1,6 +1,8 @@
 @tool
 @icon("res://addons/func_godot/icons/icon_slipgate3d.svg")
+## @deprecated: Deprecated / default behavior of FuncGodot, instead import the quake .map file as a 'Map Scene' and import it into another scene as a node.
 class_name FuncGodotMap extends Node3D
+
 ## Scene generator node that parses a [QuakeMapFile] according to its [FuncGodotMapSettings].
 ##
 ## A scene generator node that parses a [QuakeMapFile]. It uses a [FuncGodotMapSettings] 
@@ -12,9 +14,9 @@ const _SIGNATURE: String = "[MAP]"
 
 ## Bitflag settings that control various aspects of the build process.
 enum BuildFlags {
-	UNWRAP_UV2 			= 1 << 0,	## Unwrap UV2s during geometry generation for lightmap baking.
-	SHOW_PROFILE_INFO 	= 1 << 1,	## Print build step information during build process.
-	DISABLE_SMOOTHING	= 1 << 2	## Force disable processing of vertex normal smooth shading.
+	UNWRAP_UV2            = 1 << 0,  ## Unwrap UV2s during geometry generation for lightmap baking.
+	SHOW_PROFILE_INFO    = 1 << 1,  ## Print build step information during build process.
+	DISABLE_SMOOTHING    = 1 << 2  ## Force disable processing of vertex normal smooth shading.
 }
 
 ## Emitted when the build process fails.
@@ -23,21 +25,27 @@ signal build_failed
 ## Emitted when the build process succesfully completes.
 signal build_complete
 
-@export_tool_button("Build Map","CollisionShape3D") var _build_func: Callable = build
-@export_tool_button("Clear Map","Skeleton3D") var _clear_func: Callable = clear_children
+@export_tool_button("Open in TrenchBroom", "res://addons/at-icons/node3d/crate.svg")
+var _open_in_trench_broom: Callable = open_map_in_trench_broom
+
+@export_tool_button("Build Map", "CollisionShape3D") var _build_func: Callable = build
+@export_tool_button("Clear Map", "Skeleton3D") var _clear_func: Callable = clear_children
 
 @export_category("Map")
 ## Local path to MAP or VMF file to build a scene from.
-@export_file("*.map","*.vmf") var local_map_file: String = ""
+@export_file("*.map", "*.vmf") var local_map_file: String = ""
 
 ## Global path to MAP or VMF file to build a scene from. Overrides [member FuncGodotMap.local_map_file].
-@export_global_file("*.map","*.vmf") var global_map_file: String = ""
+@export_global_file("*.map", "*.vmf") var global_map_file: String = ""
 
 # Map path used by code. Do it this way to support both global and local paths.
 var _map_file_internal: String = ""
 
 ## Map settings resource that defines map build scale, textures location, entity definitions, and more.
-@export var map_settings: FuncGodotMapSettings = load(ProjectSettings.get_setting("func_godot/default_map_settings", "res://addons/func_godot/func_godot_default_map_settings.tres"))
+## [Gross Incandescence] Our version / plugin modification will *always* assume 'map_settings' is the default, we are
+## not going to be using multiply
+#@export var map_settings: FuncGodotMapSettings = load(ProjectSettings.get_setting("func_godot/default_map_settings", "res://addons/func_godot/func_godot_default_map_settings.tres"))
+var map_settings: FuncGodotMapSettings = preload("res://addons/func_godot/func_godot_default_map_settings.tres")
 
 @export_category("Build")
 ## [enum BuildFlags] that can affect certain aspects of the build process.
@@ -49,9 +57,12 @@ var _map_file_internal: String = ""
 ## Measured in Godot units, not Quake units.
 @export_range(256.0, 2048.0, 128.0) var hyperplane_size: float = 512.0
 
+func open_map_in_trench_broom() -> void:
+	FuncGodotUserConfig.open_trench_broom(global_map_file)
+
 ## Map build failure handler. Displays error message and emits [signal build_failed] signal.
-func fail_build(reason: String, notify: bool = false) -> void:
-	push_error(_SIGNATURE, " ", reason)
+func fail_build(reason: String, notify: bool=false) -> void:
+	printerr(_SIGNATURE, " ", reason)
 	if notify:
 		build_failed.emit()
 
@@ -61,18 +72,16 @@ func clear_children() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	if Engine.is_editor_hint():
-		Engine.get_singleton(&"EditorInterface").mark_scene_as_unsaved()
 
 ## Checks if a [QuakeMapFile] for the build process is provided and can be found.
 func verify() -> Error:
 	# Prioritize global map file path for building at runtime
 	_map_file_internal = global_map_file if global_map_file != "" else local_map_file
-	
+
 	if _map_file_internal.is_empty():
 		fail_build("Cannot build empty map file.")
 		return ERR_INVALID_PARAMETER
-	
+
 	# Retrieve real path if needed
 	if _map_file_internal.begins_with("uid://"):
 		var uid := ResourceUID.text_to_id(_map_file_internal)
@@ -80,12 +89,12 @@ func verify() -> Error:
 			fail_build("Error: failed to retrieve path for UID (%s)" % _map_file_internal)
 			return ERR_DOES_NOT_EXIST
 		_map_file_internal = ResourceUID.get_id_path(uid)
-	
+
 	if not FileAccess.file_exists(_map_file_internal):
 		if not FileAccess.file_exists(_map_file_internal + ".import"):
 			fail_build("Map file %s does not exist." % _map_file_internal)
 			return ERR_DOES_NOT_EXIST
-	
+
 	return OK
 
 ## Builds the [member global_map_file]. If not set, builds the [member local_map_file].
@@ -93,43 +102,47 @@ func verify() -> Error:
 ## and [FuncGodotEntityAssembler] to parse and generate the map. 
 func build() -> void:
 	var time_elapsed: float = Time.get_ticks_msec()
-	
+
 	if build_flags & BuildFlags.SHOW_PROFILE_INFO:
 		FuncGodotUtil.print_profile_info("Building...", _SIGNATURE)
 
 	clear_children()
-	
+
 	var verify_err: Error = verify()
 	if verify_err != OK:
 		fail_build("Verification failed: %s. Aborting map build" % error_string(verify_err), true)
 		return
-	
+
 	if not map_settings:
 		push_warning("Map assembler does not have a map settings provided and will use default map settings.")
-		load(ProjectSettings.get_setting("func_godot/default_map_settings", "res://addons/func_godot/func_godot_default_map_settings.tres"))
-	
+		load(
+			ProjectSettings.get_setting(
+				"func_godot/default_map_settings", "res://addons/func_godot/func_godot_default_map_settings.tres"
+			)
+		)
+
 	# Parse and collect map data
 	var parser := FuncGodotParser.new()
 	if build_flags & BuildFlags.SHOW_PROFILE_INFO:
-		print("\nPARSER")
+		print_rich("\nPARSER")
 		parser.declare_step.connect(FuncGodotUtil.print_profile_info.bind(parser._SIGNATURE))
 	var parse_data: FuncGodotData.ParseData = parser.parse_map_data(_map_file_internal, map_settings)
-	
+
 	if parse_data.entities.is_empty():
-		return	# Already printed failure message in parser, just return here
-	
+		return  # Already printed failure message in parser, just return here
+
 	var entities: Array[FuncGodotData.EntityData] = parse_data.entities
 	var groups: Array[FuncGodotData.GroupData] = parse_data.groups
-	
+
 	# Free up some memory now that we have the data
 	parser = null
-	
+
 	# Retrieve geometry
 	var generator := FuncGodotGeometryGenerator.new(map_settings, hyperplane_size)
 	if build_flags & BuildFlags.SHOW_PROFILE_INFO:
-		print("\nGEOMETRY GENERATOR")
+		print_rich("\nGEOMETRY GENERATOR")
 		generator.declare_step.connect(FuncGodotUtil.print_profile_info.bind(generator._SIGNATURE))
-	
+
 	# Generate surface and shape data
 	var generate_error := generator.build(build_flags, entities)
 	if generate_error != OK:
@@ -139,16 +152,16 @@ func build() -> void:
 	# Assemble entities and groups
 	var assembler := FuncGodotEntityAssembler.new(map_settings)
 	if build_flags & BuildFlags.SHOW_PROFILE_INFO:
-		print("\nENTITY ASSEMBLER")
+		print_rich("\nENTITY ASSEMBLER")
 		assembler.declare_step.connect(FuncGodotUtil.print_profile_info.bind(assembler._SIGNATURE))
 	assembler.build(self, entities, groups)
-	
+
 	time_elapsed = Time.get_ticks_msec() - time_elapsed
 
 	if build_flags & BuildFlags.SHOW_PROFILE_INFO:
-		print("\nCompleted in %s seconds" % (time_elapsed / 1000.0))
+		print_rich("\nCompleted in %s seconds" % (time_elapsed / 1000.0))
 
 	if build_flags & BuildFlags.SHOW_PROFILE_INFO:
-		print("")
+		print_rich("")
 		FuncGodotUtil.print_profile_info("Build complete", _SIGNATURE)
 	build_complete.emit()

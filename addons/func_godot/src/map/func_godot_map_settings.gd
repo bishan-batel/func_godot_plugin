@@ -1,19 +1,17 @@
 @tool
 @icon("res://addons/func_godot/icons/icon_godot_ranger.svg")
 class_name FuncGodotMapSettings extends Resource
-## Reusable map settings configuration for [FuncGodotMap] nodes.
 
-const DEFAULT_PATH: String = "res://addons/func_godot/func_godot_default_map_settings.tres"
+## Reusable map settings configuration for [FuncGodotMap] nodes.
 
 #region BUILD
 @export_group("Build Settings")
-
 ## Set automatically when [member inverse_scale_factor] is changed. Used primarily during the build process.
 var scale_factor: float = 0.03125
 
 ## Ratio between map editor units and Godot units. FuncGodot will divide brush coordinates by this number and save the results to [member scale_factor].
 ## This does not affect entity properties unless scripted to do so.
-@export var inverse_scale_factor: float = 32.0 :
+@export var inverse_scale_factor: float = 32.0:
 	set(value):
 		if value == 0.0:
 			printerr("Error: Cannot set Inverse Scale Factor to Zero")
@@ -22,7 +20,7 @@ var scale_factor: float = 0.03125
 		scale_factor = 1.0 / value
 
 ## [FuncGodotFGDFile] that translates map file classnames into Godot nodes and packed scenes.
-@export var entity_fgd: FuncGodotFGDFile = preload("res://addons/func_godot/fgd/func_godot_fgd.tres")
+@export var entity_fgd: FuncGodotFGDFile
 
 ## If true, will organize [SceneTree] using TrenchBroom Layers and Groups or Hammer Visgroups. Groups will be generated as [Node3D] nodes. 
 ## All non-entity structural brushes will be moved out of their groups and merged into the `Worldspawn` entity.
@@ -39,7 +37,6 @@ var scale_factor: float = 0.03125
 
 #region ENTITY
 @export_group("Entity Settings")
-
 ## Optional array of node groups to add all generated nodes to.
 @export var entity_node_groups: Array[String] = []
 
@@ -69,12 +66,11 @@ var scale_factor: float = 0.03125
 
 #region TEXTURES
 @export_group("Textures")
-
 ## Base directory for textures. When building materials, FuncGodot will search this directory for texture files with matching names to the textures assigned to map brush faces.
 @export_dir var base_texture_dir: String = "res://textures"
 
 ## File extensions to search for texture data.
-@export var texture_file_extensions: Array[String] = ["png", "jpg", "jpeg", "bmp", "tga", "webp", "wal"]
+@export var texture_file_extensions: Array[String] = ["png", "jpg", "jpeg", "bmp", "tga", "webp"]
 
 @export_subgroup("Hint Textures")
 ## Optional path for the clip texture, relative to [member base_texture_dir]. 
@@ -97,7 +93,6 @@ var scale_factor: float = 0.03125
 	set(tex):
 		origin_texture = tex.to_lower()
 @export_subgroup("")
-
 ## Optional [QuakeWadFile] resources to apply textures from. See the [Quake Wiki](https://quakewiki.org/wiki/Texture_Wad) for more information on Quake Texture WADs.
 @export var texture_wads: Array[QuakeWadFile] = []
 
@@ -105,7 +100,6 @@ var scale_factor: float = 0.03125
 
 #region MATERIALS
 @export_group("Materials")
-
 ## Base directory for loading and saving materials. When building materials, FuncGodot will search this directory for material resources 
 ## with matching names to the textures assigned to map brush faces. If not found, will fall back to [member base_texture_dir].
 @export_dir var base_material_dir: String = ""
@@ -142,7 +136,6 @@ var scale_factor: float = 0.03125
 ## Automatic PBR material generation ORM map pattern
 @export var orm_map_pattern: String = "%s_orm"
 @export_subgroup("")
-
 ## Save automatically generated materials to disk, allowing reuse across [FuncGodotMap] nodes. 
 ## [i]NOTE: Materials do not use the [member default_material] settings after saving.[/i]
 @export var save_generated_materials: bool = true

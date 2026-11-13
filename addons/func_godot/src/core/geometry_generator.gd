@@ -75,7 +75,6 @@ func get_triangle_indices(width: int, height: int) -> Array[int]:
 			indices.append(col + row * width)             
 			indices.append((col + 1) + row * width)       
 			indices.append(col + (row + 1) * width)      
-			 
 			## Second triangle of the square; top right, bottom right, bottom left
 			indices.append((col + 1) + row * width)       
 			indices.append((col + 1) + (row + 1) * width) 
@@ -212,19 +211,12 @@ func determine_entity_origins(entity_index: int) -> void:
 		match origin_type:
 			_OriginType.ABSOLUTE, _OriginType.RELATIVE:
 				if "origin" in entity.properties:
-					var origin_prop = entity.properties["origin"]
-					match typeof(origin_prop):
-						TYPE_VECTOR3, TYPE_VECTOR3I:
-							origin_prop = FuncGodotUtil.id_to_opengl(Vector3(origin_prop)) * map_settings.scale_factor
-						TYPE_STRING:
-							var origin_comps: PackedFloat64Array = entity.properties["origin"].split_floats(" ")
-							if origin_comps.size() > 2:
-								origin_prop = Vector3(origin_comps[0], origin_comps[1], origin_comps[2]) * map_settings.scale_factor
-					if typeof(origin_prop) == TYPE_VECTOR3:
-						if origin_type == _OriginType.ABSOLUTE:
-							entity.origin = origin_prop
+					var origin_comps: PackedFloat64Array = entity.properties["origin"].split_floats(" ")
+					if origin_comps.size() > 2:
+						if entity.origin_type == _OriginType.ABSOLUTE:
+							entity.origin = Vector3(origin_comps[0], origin_comps[1], origin_comps[2]) * map_settings.scale_factor
 						else: # _OriginType.RELATIVE
-							entity.origin += origin_prop
+							entity.origin += Vector3(origin_comps[0], origin_comps[1], origin_comps[2]) * map_settings.scale_factor
 				
 			_OriginType.BRUSH:
 				if origin_mins != Vector3.INF:
@@ -314,17 +306,6 @@ func smooth_entity_vertices(entity_index: int) -> void:
 
 #endregion
 
-func get_plane_lookup_key(plane: Plane) -> Vector4i:
-	# I don't think this constant needs to be exposed, but it avoids floating point errors
-	const OCCLUSION_PRECISION := 100.0;
-
-	return Vector4i(
-		int(round(plane.normal.x*OCCLUSION_PRECISION)),
-		int(round(plane.normal.y*OCCLUSION_PRECISION)),
-		int(round(plane.normal.z*OCCLUSION_PRECISION)),
-		int(round(plane.d*OCCLUSION_PRECISION))
-	)
-
 func generate_entity_surfaces(entity_index: int) -> void:
 	var entity: _EntityData = entity_data[entity_index]
 	
@@ -398,15 +379,6 @@ func generate_entity_surfaces(entity_index: int) -> void:
 		
 		# Begin fresh index offset for this subarray
 		var index_offset: int = 0
-		# build lookup table if we're doing cull interior faces
-		var interior_faces_lookup_dict : Dictionary; # [Vector4i, Array[_FaceData]]
-		if entity.properties.get(map_settings.cull_interior_faces_property, false):
-			for face: _FaceData in faces:
-				var vec := get_plane_lookup_key(face.plane)
-				if interior_faces_lookup_dict.has(vec):
-					(interior_faces_lookup_dict[vec] as Array[_FaceData]).push_back(face)
-				else:
-					interior_faces_lookup_dict[vec] = [face]
 		
 		for face: _FaceData in faces:
 			# FACE SCOPE BEGIN
@@ -418,18 +390,11 @@ func generate_entity_surfaces(entity_index: int) -> void:
 			#region Reject interior faces only if desired
 			if entity.properties.get(map_settings.cull_interior_faces_property, false):
 				var remove_face := false
-				# We want to lookup opposite planes
-				var opposite_plane = Plane(face.plane)
-				opposite_plane.d *= -1;
-				opposite_plane.normal *= -1;
-				var vec := get_plane_lookup_key(opposite_plane)
-				var faces_from_lookup = ((interior_faces_lookup_dict.get(vec, [])) as Array[_FaceData]);
-				
-				for face2: _FaceData in faces_from_lookup:
+				for face2: _FaceData in faces:
 					if face == face2:
 						continue
 					# Are the planes aligned?
-					if !face2.plane.has_point(face.plane.get_center(), 0.0001):
+					if !face2.plane.has_point(face.plane.get_center()):
 						continue
 					# Opposite planes
 					if !(face.plane.normal*-1.0).is_equal_approx(face2.plane.normal):

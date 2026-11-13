@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://cqdsyu3fec1vv"]
+
+[ext_resource type="Script" uid="uid://bx1mv10mla3ne" path="res://addons/func_godot/ui/fdg_export_caution.gd" id="1_h0cif"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_wjva1"]
+
+[node name="FDGExportCaution" type="ConfirmationDialog" unique_id=730262534 node_paths=PackedStringArray("label")]
+oversampling_override = 1.0
+title = "FDG Export Warnings"
+initial_position = 2
+size = Vector2i(816, 630)
+visible = true
+ok_button_text = "Export with issues"
+script = ExtResource("1_h0cif")
+label = NodePath("VBoxContainer/MarginContainer/PanelContainer/Issues")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1481083439]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 808.0
+offset_bottom = 581.0
+
+[node name="Label" type="RichTextLabel" parent="VBoxContainer" unique_id=1642510029]
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_wjva1")
+bbcode_enabled = true
+text = "Encounted issues when trying to export this FGD file, do you wish to continue?
+[color=warn][i]Doing so may produce an invalid FGD.[/i][/color] 
+
+"
+fit_content = true
+horizontal_alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer" unique_id=118042599]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer/MarginContainer" unique_id=342814996]
+layout_mode = 2
+
+[node name="Issues" type="RichTextLabel" parent="VBoxContainer/MarginContainer/PanelContainer" unique_id=957845739]
+custom_minimum_size = Vector2(800, 400)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+bbcode_enabled = true
+text = "asdfasdf"
+fit_content = true
+selection_enabled = true
