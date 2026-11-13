@@ -3,6 +3,8 @@
 class_name FuncGodotMapSettings extends Resource
 ## Reusable map settings configuration for [FuncGodotMap] nodes.
 
+const DEFAULT_PATH: String = "res://addons/func_godot/func_godot_default_map_settings.tres"
+
 #region BUILD
 @export_group("Build Settings")
 

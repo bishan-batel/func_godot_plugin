@@ -7,6 +7,8 @@ var palette_import_plugin : QuakePaletteImportPlugin = null
 var wad_import_plugin: QuakeWadImportPlugin = null
 var wal_import_plugin: Quake2WalImportPlugin = null
 
+var map_format_importer: QuakeMapSceneFormatImporter = null
+
 #var func_godot_map_progress_bar: Control = null
 var edited_object_ref: WeakRef = weakref(null)
 
@@ -35,6 +37,9 @@ func _enter_tree() -> void:
 	add_import_plugin(wad_import_plugin)
 	add_import_plugin(wal_import_plugin)
 	
+	map_format_importer = QuakeMapSceneFormatImporter.new()
+	add_scene_format_importer_plugin(map_format_importer)
+
 	#func_godot_map_progress_bar = create_func_godot_map_progress_bar()
 	#func_godot_map_progress_bar.set_visible(false)
 	#add_control_to_container(EditorPlugin.CONTAINER_INSPECTOR_BOTTOM, func_godot_map_progress_bar)
@@ -89,6 +94,9 @@ func _exit_tree() -> void:
 	palette_import_plugin = null
 	wad_import_plugin = null
 	wal_import_plugin = null
+
+	remove_scene_format_importer_plugin(map_format_importer)
+	map_format_importer = null
 	
 	#if func_godot_map_progress_bar:
 		#remove_control_from_container(EditorPlugin.CONTAINER_INSPECTOR_BOTTOM, func_godot_map_progress_bar)
